@@ -2,7 +2,7 @@
 """
 Created on Wed Apr 10 22:11:39 2019
 based on the code in https://github.com/eXtremeGravityInstitute/LISA_Sensitivity
-pleas cite 1803.01944 too
+please cite 1803.01944 too
 @author: Gong
 """
 
