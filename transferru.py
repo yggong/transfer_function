@@ -63,7 +63,6 @@ def frl1(x):
     z=(a2+a1+b1-c1[0])/8./x/x
     return z    
 
-#The frequency dependent eta function
 def eta(a,b,x,c):
     mu1=np.cos(a)
     mu2=np.cos(c)*np.cos(a)+np.sin(c)*np.sin(a)*np.cos(b)
@@ -109,7 +108,7 @@ rbtrack=[]
 rvtrack=[]
 rltrack=[]
 
-x0=np.arange(-3.,-1.,0.2)
+x0=np.arange(-3.,-1.,0.1)
 x2=np.arange(-1.,2.,0.01)
 x3=np.concatenate((x0,x2),axis=0)
 #x=np.arange(-1.,2.2,0.01) 
@@ -133,14 +132,12 @@ for u in x:
     rbtrack.append(rb)
     rvtrack.append(rv)
     rltrack.append(rl)
-    
-#strain
+
 hefft=np.sqrt(tqsn/rttrack/2.)
 heffb=np.sqrt(tqsn/rbtrack)
 heffv=np.sqrt(tqsn/rvtrack/2.)
 heffl=np.sqrt(tqsn/rltrack)
 
-#save the transfer function to transfer.txt
 file1='transfer.txt'
 data=np.array([x,ft,rttrack,rvtrack,rbtrack,rltrack,hefft,heffv,heffb,heffl])
 data=data.T
@@ -149,51 +146,50 @@ with open(file1,'w') as file_object:
     np.savetxt(file_object,data)
 file_object.close() 
 
-#get PI curve
-omt=hefft*hefft*2.*pi*pi*ft**3./3./H0/H0
-omv=heffv*heffv*2.*pi*pi*ft**3./3./H0/H0
-omb=heffb*heffb*2.*pi*pi*ft**3./3./H0/H0
-oml=heffl*heffl*2.*pi*pi*ft**3./3./H0/H0
+omt_eff=hefft*hefft*2.*pi*pi*ft**3./3./H0/H0
+omv_eff=heffv*heffv*2.*pi*pi*ft**3./3./H0/H0
+omb_eff=heffb*heffb*2.*pi*pi*ft**3./3./H0/H0
+oml_eff=heffl*heffl*2.*pi*pi*ft**3./3./H0/H0
 
-omtf=interp1d(ft,omt)
-omvf=interp1d(ft,omv)
-ombf=interp1d(ft,omb)
-omlf=interp1d(ft,oml)
+omtf=interp1d(ft,omt_eff)
+omvf=interp1d(ft,omv_eff)
+ombf=interp1d(ft,omb_eff)
+omlf=interp1d(ft,oml_eff)
+
+def fpow(f,b):
+    return (f/frefTQ)**b
 
 def omfbt(f,b):
-    z=(f/frefTQ)**(2.*b)/omtf(f)**2.
+    z=fpow(f,b)**2./omtf(f)**2.
     return z
 
-def ombft(f,b):
+def ombt(b):
     a=quad(omfbt,ft[0],30.,args=(b,))
-    z=rho/np.sqrt(2.*yr)*a[0]**(-0.5)*(f/frefTQ)**b
+    z=rho/np.sqrt(2.*yr)*a[0]**(-0.5)
     return z
 
 def omfbv(f,b):
-    z=(f/frefTQ)**(2.*b)/omvf(f)**2.
+    z=fpow(f,b)**2./omvf(f)**2.
     return z
 
-def ombfv(f,b):
+def ombv(b):
     z=rho/np.sqrt(2.*yr)*(quad(omfbv,ft[0],30.,args=(b,))[0])**(-0.5)
-    z=z*(f/frefTQ)**b
     return z
 
 def omfbb(f,b):
-    z=(f/frefTQ)**(2.*b)/ombf(f)**2.
+    z=fpow(f,b)**2./ombf(f)**2.
     return z
 
-def ombfb(f,b):
+def ombb(b):
     z=rho/np.sqrt(2.*yr)*(quad(omfbb,ft[0],30.,args=(b,))[0])**(-0.5)
-    z=z*(f/frefTQ)**b
     return z
 
 def omfbl(f,b):
-    z=(f/frefTQ)**(2.*b)/omlf(f)**2.
+    z=fpow(f,b)**2./omlf(f)**2.
     return z
 
-def ombfl(f,b):
+def ombl(b):
     z=rho/np.sqrt(2.*yr)*(quad(omfbl,ft[0],30.,args=(b,))[0])**(-0.5)
-    z=z*(f/frefTQ)**b
     return z
 
 omttrack=[]
@@ -204,29 +200,36 @@ omt2=[]
 omv2=[]
 omb2=[]
 oml2=[]
+omt2a=[]
+omv2a=[]
+omb2a=[]
+oml2a=[]
 
 beta=np.arange(-10.,10.,0.5)
 for i in range(len(beta)):
-    omt2.append(0)
-    omv2.append(0)
-    omb2.append(0)
-    oml2.append(0)
+    omt2.append(ombt(beta[i]))
+    omv2.append(ombv(beta[i]))
+    omb2.append(ombb(beta[i]))
+    oml2.append(ombl(beta[i]))
+    omt2a.append(0)
+    omv2a.append(0)
+    omb2a.append(0)
+    oml2a.append(0)
     
 ft1=np.arange(-3.5,0,0.035)
 ft1=10.**ft1
 for f1 in ft1:
     for i in range(len(beta)):
-      omt2[i]=ombft(f1,beta[i]) 
-      omv2[i]=ombfv(f1,beta[i])
-      omb2[i]=ombfb(f1,beta[i])
-      oml2[i]=ombfl(f1,beta[i])
+      omt2a[i]=omt2[i]*fpow(f1,beta[i])
+      omv2a[i]=omv2[i]*fpow(f1,beta[i])
+      omb2a[i]=omb2[i]*fpow(f1,beta[i])
+      oml2a[i]=oml2[i]*fpow(f1,beta[i])
       
-    omttrack.append(max(omt2))
-    omvtrack.append(max(omv2))
-    ombtrack.append(max(omb2))
-    omltrack.append(max(oml2))
+    omttrack.append(max(omt2a))
+    omvtrack.append(max(omv2a))
+    ombtrack.append(max(omb2a))
+    omltrack.append(max(oml2a))
 
-#save data for PI Curve in PIdata.txt
 file2='PIdata.txt'
 data=np.array([ft1,omttrack,omvtrack,ombtrack,omltrack])
 data=data.T
