@@ -4,7 +4,7 @@ Created on Wed Apr 10 15:52:30 2019
 Sensitivity curves for space-based gw detector LISA/TQ's
 @author: ygong
 Based on the code from https://github.com/eXtremeGravityInstitute/LISA_Sensitivity
-pleas cite 1803.01944
+please cite 1803.01944
 """
 
 import numpy as np
@@ -121,6 +121,7 @@ plt.loglog(ftq, np.sqrt(ftq*Sntq),'c') # plot the characteristic strain
 plt.loglog(fa, np.sqrt(fa*Sna),'k') # plot the simulated aLIGO noise
 '''
 
+#choose between lisa and tq to calculate SNR
 detector = "tq"
 
 for m in [1.0e6, 1.0e5, 1.0e4, 1.0e3]:
