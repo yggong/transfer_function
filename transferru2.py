@@ -11,16 +11,16 @@ import matplotlib.pyplot as plt
 pi=np.pi
 
 transfer_data = np.genfromtxt('transfer.txt')
-x=transfer_data[:,0]
-ft=transfer_data[:,1]
-rttrack=transfer_data[:,2]
-rvtrack=transfer_data[:,3]
-rbtrack=transfer_data[:,4]
-rltrack=transfer_data[:,5]
-hefft=transfer_data[:,6]
-heffv=transfer_data[:,7]
-heffb=transfer_data[:,8]
-heffl=transfer_data[:,9]
+x=transfer_data[1:,0]
+ft=transfer_data[1:,1]
+rttrack=transfer_data[1:,2]
+rvtrack=transfer_data[1:,3]
+rbtrack=transfer_data[1:,4]
+rltrack=transfer_data[1:,5]
+hefft=transfer_data[1:,6]
+heffv=transfer_data[1:,7]
+heffb=transfer_data[1:,8]
+heffl=transfer_data[1:,9]
 
 
 PI_data=np.genfromtxt('PIdata.txt')
@@ -88,7 +88,7 @@ ax2.set_xticklabels(tick_function(new_tick_locations))
 
 plt.tight_layout()
 ax1.legend()
-plt.savefig('raf.jpeg',dpi=300)
+plt.savefig('raf.pdf')
 plt.show()
 
 #plot h_{eff}^A(f)
@@ -105,7 +105,7 @@ plt.ylabel(r'$h_{eff}^A(f)$/Hz$^{-1/2}$', labelpad=5,fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15) 
 plt.tight_layout()   
 plt.legend()
-plt.savefig('tqheff.jpeg',dpi=300)
+plt.savefig('tqheff.pdf')
 plt.show()
 
 # plot PI curve
@@ -123,5 +123,5 @@ plt.ylabel(r'$\Omega_A(f)$', labelpad=5,fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15) 
 plt.tight_layout()   
 plt.legend()
-plt.savefig('TQPIcurve.jpeg',dpi=300)
+plt.savefig('TQPIcurve.pdf')
 plt.show()
