@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 10 15:52:30 2019
-Sensitivity curves for space-based gw detector LISA/TQ's
+Space-based gw detector LISA/TQ/TJ's Sensitivity
+based on 1803.01944
 @author: ygong
-Based on the code from https://github.com/eXtremeGravityInstitute/LISA_Sensitivity
-please cite 1803.01944
 """
 
 import numpy as np
@@ -29,58 +28,92 @@ constants = np.array([H0, Omega_m, Tobs, NC])
 
 #Construct, Plot, and save to dat file, 
 #the characteristic noise strain for specified observation period
-
+'''
 plt.figure(figsize=(8,6))
 plt.rcParams['text.usetex'] = True
+plt.ion()
 plt.rc('text', usetex=True)
 plt.rc('font', family='calibri')
+plt.xlabel(r'$f$ [Hz]', fontsize=20, labelpad=10)
+#plt.ylabel(r'Characteristic Strain', fontsize=20, labelpad=10)
+plt.ylabel(r'$h_{eff}(f)$ [Hz$^{-1/2}$]', fontsize=20, labelpad=10)
+plt.tick_params(axis='both', which='major', labelsize=20)
+
+
 
 #Calculate, Plot, and save the noise curve
-# h_{eff} with unit 1/sqrt(Hz)
-#h_c=sqrt(f)*h_e
 
-f, Sn = LISA.get_Sn(constants,'lisa')
+f, Sn = LISA.get_Sn('lisa', constants)
+
+#plt.loglog(f, np.sqrt(Sn),'k',label='LISA With pattern') # plot the strain
+#plt.loglog(f, np.sqrt(f*Sn),'k',label='With pattern') # plot the characteristic strain
+plt.loglog(f, 2*np.pi**2*f**3*Sn/3/(H0*1000/3.08568025e22)**2,'k',label='LISA With pattern')
 
 #Snls = LISA.get_Snls(f)  #original lisa result with longer arm
 #plt.loglog(f, np.sqrt(f*Snls),'b', label='Simulated') # plot the simulated characteristic strain
+'''
 
+'''
 L, f_star, S_lp, S_ac = LISA.get_detector('lisa') 
 Snlsapprox = LISA.get_Sn_approx(f, f_star, L, NC, S_lp, S_ac)
-
-# plot tq sensitivity curve
-ftq, Sntq = LISA.get_Sn(constants,'tq')
-
-'''
-plt.loglog(f, np.sqrt(Sn),'k',label='LISA With pattern') # plot the strain
 plt.loglog(f, np.sqrt(Snlsapprox),'r',label='LISA Approximated') # plot the simulated strain
-plt.loglog(ftq, np.sqrt(Sntq),'c',label='TQ') # plot TQ's strain
-plt.ylabel(r'$h_{eff}^T(f)$ [Hz$^{-1/2}$]', fontsize=20, labelpad=10)
+#plt.loglog(f, np.sqrt(f*Snlsapprox),'r',label='Approximated') # plot the simulated characteristic strain
 '''
+'''
+ftq, Sntq = LISA.get_Sn('tq', constants)
+#plt.loglog(ftq, np.sqrt(Sntq),'c',label='TQ') # plot TQ's strain
+#plt.loglog(ftq, np.sqrt(ftq*Sntq),'c',label='TQ') # plot the characteristic strain for TQ
+plt.loglog(ftq, 2*np.pi**2*ftq**3*Sntq/3/(H0*1000/3.08568025e22)**2,'k',label='TQ')
 
-# plot characteristic strain
-plt.loglog(f, np.sqrt(f*Sn),'k',label='LISA with pattern') # plot the characteristic strain
-plt.loglog(f, np.sqrt(f*Snlsapprox),'r',label='LISA Approximated') # plot the simulated characteristic strain
-plt.loglog(ftq, np.sqrt(ftq*Sntq),'c',label='TQ') # plot the characteristic strain for TQ
-plt.ylabel(r'Characteristic Strain', fontsize=20, labelpad=10)
+fa = np.arange(1,1001,0.5)
+Sna = LISA.get_Snaligo(fa)
+plt.loglog(fa,2*np.pi**2*fa**3*Sna/3/(H0*1000/3.08568025e22)**2,'k',label='aLIGO') # plot the simulated aLIGO noise
 
-
-plt.xlabel(r'$f$ [Hz]', fontsize=20, labelpad=10)
-plt.tick_params(axis='both', which='major', labelsize=20)
-plt.xlim(1.0e-4, 10.0)
-plt.ylim(3.0e-22, 1.0e-15)
+plt.xlim(1.0e-4, 1000.0)
+plt.ylim(1.0e-12, 1.0e-2)
 plt.tick_params(labelsize=20)
+
 plt.tight_layout()
 plt.legend()
+plt.savefig('Sens_Curves.jpeg',dpi=400)
+
+plt.show()
+'''
+
+'''
+# test the transfer function Get_Ru(u)
+transfer_data = np.genfromtxt('R.txt')
+fu=transfer_data[:,0]
+Rd=transfer_data[:,1]
+Ra = LISA.Get_Ru(fu)
+# due to numerical accuracy for ci(x) as x->0, set the theoretical value 
+f_c = 8.5e-4  #set the minimum frequency 
+n_e = np.where(fu>=f_c)[0][0]
+Ra[0:n_e] = 1./5.*np.sin(np.pi/3.)**2.  
+
+plt.figure(figsize=(8,6))
+plt.rcParams['text.usetex'] = True
+plt.ion()
+plt.rc('text', usetex=True)
+plt.rc('font', family='calibri')
+plt.xlabel(r'$f$ [Hz]', fontsize=20, labelpad=10)
+plt.ylabel(r'$R(u)$', fontsize=20, labelpad=10)
+plt.tick_params(axis='both', which='major', labelsize=20)
+
+plt.loglog(fu,Rd,'b',label='Rd')
+plt.loglog(fu,Ra,'c',label='Ra')
 plt.show()
 
-'''
-plt.savefig('Sens_he.jpeg',dpi=400)
-plt.savefig('Sens_he.pdf',dpi=400)
-'''
+#save the transfer function to transfer.txt
 
-#plt.savefig('Sens_hc.jpeg',dpi=400)
-#plt.savefig('Sens_hc.pdf',dpi=400)
-
+file1='t_ru.txt'
+data=np.array([fu,Rd,Ra])
+data=data.T
+with open(file1,'w') as file_object:
+    file_object.write('f Rd Ra \n')
+    np.savetxt(file_object,data)
+file_object.close() 
+'''
 
 #out_file = 'characteristic_noise_strain.dat'
 #np.savetxt(out_file,(np.vstack((f, np.sqrt(f*Sn))).T), delimiter=' ')
@@ -98,40 +131,45 @@ f_start  = None         # start frequency
 
 #LISA.calculate_plot_source(m1, m2, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
 
+
+
 plt.figure(figsize=(12,8))
 plt.rcParams['text.usetex'] = True
+plt.ion()
 plt.rc('text', usetex=True)
 plt.rc('font', family='calibri')
+plt.xlabel(r'$f$ [Hz]', fontsize=20, labelpad=10)
+plt.ylabel(r'Characteristic Strain', fontsize=20, labelpad=10)
+#plt.ylabel(r'$h_{eff}(f)$ [Hz$^{-1/2}$]', fontsize=20, labelpad=10)
+plt.tick_params(axis='both', which='major', labelsize=20)
 
-# get sensitivity curve for lisa
-f, Sn = LISA.get_Sn(constants,'lisa')
+#f, Sn = LISA.get_Sn('lisa', constants)
+#plt.loglog(f, np.sqrt(f*Sn),'k') # plot the characteristic strain
+#plt.loglog(f, np.sqrt(Sn),'k') # plot the strain
 
-ftq, Sntq = LISA.get_Sn(constants,'tq')
+ftq, Sntq = LISA.get_Sn('tq', constants)
+plt.loglog(ftq, np.sqrt(ftq*Sntq),'r') # plot the characteristic strain
+#plt.loglog(ftq, np.sqrt(Sntq),'c') # plot the strain
+
+#ftj, Sntj = LISA.get_Sn('tj', constants)
+#plt.loglog(ftj, np.sqrt(ftj*Sntj),'c') # plot the characteristic strain
 
 fa = np.arange(1,1001,0.5)
 Sna = LISA.get_Snaligo(fa)
-
-plt.loglog(f, np.sqrt(Sn),'k') # plot the strain
-plt.loglog(ftq, np.sqrt(Sntq),'c') # plot the strain
-plt.loglog(fa, np.sqrt(Sna),'k') # plot the simulated aLIGO noise
-
-'''
-plt.loglog(f, np.sqrt(f*Sn),'k') # plot the characteristic strain
-plt.loglog(ftq, np.sqrt(ftq*Sntq),'c') # plot the characteristic strain
+#plt.loglog(fa, np.sqrt(Sna),'k') # plot the simulated aLIGO noise
 plt.loglog(fa, np.sqrt(fa*Sna),'k') # plot the simulated aLIGO noise
-'''
 
-#choose between lisa and tq to calculate SNR
+
 detector = "tq"
 
 for m in [1.0e6, 1.0e5, 1.0e4, 1.0e3]:
     m1=m*LISA.TSUN
     m2=m*LISA.TSUN
-    f, h_c_arr, SNR, SNR1 = LISA.calculate_source(detector, m1, m2, constants, 
+    f, h_e_arr, h_c_arr, SNR, SNR1 = LISA.calculate_source(detector, m1, m2, constants, 
                                                            Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
- #   plt.loglog(f, h_c_arr,'b',lw=2, label='SNR: ' + str("%4.1f" % SNR)) #h_c 
-    plt.loglog(f, h_c_arr/np.sqrt(f),'b',lw=2, label='SNR: ' + str("%4.1f" % SNR)) #h_e
-
+    plt.loglog(f, h_c_arr,'b',lw=2, label='SNR: ' + str("%4.1f" % SNR)) 
+#    plt.loglog(f, h_e_arr,'b',lw=2, label='SNR: ' + str("%4.1f" % SNR)) 
+    #print SNR
 
 # GW150914, need to redefine f
 m7       = 36.0*LISA.TSUN # leading coefficient is the 
@@ -140,19 +178,61 @@ D_lum    = 410.*LISA.MPC # Luminosity Distance, meters
 z        = None          # Redshift
 T_merger = 1.*LISA.YEAR  # time to merger
 
-f, h_c_arr, SNR, SNR1 = LISA.calculate_source(detector, m7, m8, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
-plt.loglog(f, h_c_arr/np.sqrt(f),'m',lw=2, label='SNR: '+str("%4.1f" % SNR) + '/'+str("%4.1f" % SNR1)) 
-#plt.loglog(f, h_c_arr,'m',lw=2, label='SNR: ' + str("%4.1f" % SNR) + '/'+str("%4.1f" % SNR1)) #h_c
+f, h_e_arr, h_c_arr, SNR, SNR1 = LISA.calculate_source(detector, m7, m8, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
+#plt.loglog(f, h_e_arr,'m',lw=2, label='SNR: '+str("%4.1f" % SNR) + '/'+str("%4.1f" % SNR1)) 
+plt.loglog(f, h_c_arr,'m',lw=2, label=str("%4.1f" % SNR) + '/'+str("%4.1f" % SNR1)) 
+#print SNR
 
 
-m3 = 0.50*LISA.TSUN 
-m4 = 0.25*LISA.TSUN
-D_lum = 1.0e-3*LISA.MPC
-f_start  = 2.6e-3
+m3 = 0.61*LISA.TSUN 
+m4 = 0.21*LISA.TSUN
+D_lum = 2.34e-3*LISA.MPC
+f_start  = 2.0/414.7915404
 z= None
-#plot h_e, if you want to plot h_c, you need to uncomment the line 362 in LISA_tools.py
-f, h_c_arr, SNR, SNR1 = LISA.calculate_source(detector, m3, m4, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
+f, h_e_ztf, h_c_ztf, ZTF_SNR, SNR1 = LISA.calculate_source(detector, m3, m4, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
 
+m3u = (0.61+0.017)*LISA.TSUN 
+m4u = (0.21+0.014)*LISA.TSUN
+D_lum_d = (2.34-0.14)*1e-3*LISA.MPC
+f, h_e_ztf_u, h_c_ztf_u, SNR_u, SNR1 = LISA.calculate_source(detector, m3u, m4u, constants, Dl=D_lum_d, z=z, T_merger=T_merger, f_start=f_start)
+
+m3d = (0.61-0.022)*LISA.TSUN 
+m4d = (0.21-0.015)*LISA.TSUN
+D_lum_u = (2.34+0.14)*1e-3*LISA.MPC
+f, h_e_ztf_l, h_c_ztf_l, SNR_d, SNR1 = LISA.calculate_source(detector, m3d, m4d, constants, Dl=D_lum_u, z=z, T_merger=T_merger, f_start=f_start)
+
+ZTF_erroru=h_c_ztf_u -h_c_ztf
+ZTF_errorl=h_c_ztf-h_c_ztf_l
+plt.scatter(f_start,h_c_ztf,c='r',label='ZTF J1539+5027(6.9 min)'+' SNR: '+str("%4.1f" % ZTF_SNR))
+plt.errorbar([f_start],[h_c_ztf],ZTF_erroru+ZTF_errorl,ecolor='r',lolims=False,uplims=False)
+
+m5 = 0.49*LISA.TSUN 
+m6 = 0.247*LISA.TSUN
+D_lum = 1.e-3*LISA.MPC
+f_start  = 2./765.206543
+f, h_e_sdss, h_c_sdss, SDSS_SNR, SNR1 = LISA.calculate_source(detector, m5, m6, constants, Dl=D_lum, z=z, T_merger=T_merger, f_start=f_start)
+
+m5u = (0.49+0.02)*LISA.TSUN 
+m6u = (0.247+0.015)*LISA.TSUN
+D_lum_l = (1.0-0.1)*1e-3*LISA.MPC
+f, h_e_sdss_u, h_c_sdss_u, SNR_u, SNR1 = LISA.calculate_source(detector, m5u, m6u, constants, Dl=D_lum_l, z=z, T_merger=T_merger, f_start=f_start)
+
+m5l = (0.49-0.02)*LISA.TSUN 
+m6l = (0.247-0.015)*LISA.TSUN
+D_lum_u =(1.0+0.1)* 1e-3*LISA.MPC
+f, h_e_sdss_l, h_c_sdss_l, SNR_l, SNR1 = LISA.calculate_source(detector, m5l, m6l, constants, Dl=D_lum_u, z=z, T_merger=T_merger, f_start=f_start)
+
+SDSS_erroru=h_c_sdss_u -h_c_sdss
+SDSS_errorl=h_c_sdss-h_c_sdss_l
+plt.scatter(f_start,h_c_sdss,c='b',label='SDSS J0651+2844(12.8 min)'+' SNR: '+str("%4.1f" % SDSS_SNR))
+plt.errorbar([f_start],[h_c_sdss],SDSS_erroru+SDSS_errorl,ecolor='b',lolims=False,uplims=False)
+
+mhm1 = 0.5*LISA.TSUN 
+mhm2 = 0.5*LISA.TSUN
+D_l_hm = 4.9e-4*LISA.MPC
+f_start  = 2./321.5
+f, h_e_hm, h_c_hm, hm_SNR, SNR1 = LISA.calculate_source(detector, mhm1, mhm2, constants, Dl=D_l_hm, z=z, T_merger=T_merger, f_start=f_start)
+plt.plot(f_start,h_c_hm,'r*',label='RX J0806.3+1527(5.4 min)'+' SNR: '+str("%4.1f" % hm_SNR))
 
 font1 = {'family': 'serif',
         'color':  'blue',
@@ -172,24 +252,28 @@ font3 = {'family': 'serif',
         'size': 20,
         }
 
+font4 = {'family': 'serif',
+        'color':  'red',
+        'weight': 'normal',
+        'size': 20,
+        }
+
 plt.xlim(1.0e-6, 1.0e3)
-plt.ylim(1.0e-24, 1.0e-14)
+plt.ylim(1.0e-23, 1.0e-16)
 plt.title('SNR for '+detector, fontdict=font1)
-plt.text(5.e-5, 1.0e-15, r'$M=10^6M_\odot @ z=3$', fontdict=font1)
-plt.text(1.e-4, 6.0e-17, r'$M=10^5M_\odot$', fontdict=font1)
-plt.text(2.e-3, 1.5e-18, r'$M=10^4M_\odot$', fontdict=font1)
-plt.text(4.e-3, 1.5e-19, r'$M=10^3M_\odot$', fontdict=font1)
-plt.text(9., 2.0e-21, r'GW150914', fontdict=font2)
-plt.text(3., 1.0e-20, r'aLIGO', fontsize=20)
-plt.text(0.2, 6.0e-19, r'LISA', fontsize=20)
-plt.text(0.9, 1.0e-19, r'TQ', fontdict=font3)
-plt.legend()
-plt.xlabel(r'$f$ [Hz]', fontsize=20, labelpad=10)
-#plt.ylabel(r'Characteristic Strain', fontsize=20, labelpad=10)
-plt.ylabel(r'$h_{eff}(f)$ [Hz$^{-1/2}$]', fontsize=20, labelpad=10)
-plt.tick_params(axis='both', which='major', labelsize=20)
 plt.tight_layout()
-#plt.savefig('{}_he.pdf'.format(detector),dpi=600)
-#plt.savefig('{}_he.jpeg'.format(detector),dpi=600)
+plt.tick_params(labelsize=20)
+plt.text(3.e-5, 1.0e-17, r'$M=10^6M_\odot @ z=3$', fontdict=font1)
+plt.text(1.e-4, 1.0e-18, r'$M=10^5M_\odot$', fontdict=font1)
+#plt.text(1.e-3, 1.0e-19, r'$M=10^4M_\odot$', fontdict=font1)
+plt.text(2.e-3, 1.5e-20, r'$M=10^3M_\odot$', fontdict=font1)
+plt.text(5., 5.0e-21, r'GW150914', fontdict=font2)
+plt.text(60., 8.0e-23, r'aLIGO', fontsize=20)
+#plt.text(0.2, 6.0e-19, r'LISA', fontsize=20)
+#plt.text(0.8, 1.0e-19, r'TJ', fontdict=font3)
+plt.text(0.8, 2.0e-20, r'TQ', fontdict=font4)
+plt.legend()
+plt.savefig('multi_tq.pdf',dpi=600)
+plt.savefig('multi_tq.jpeg',dpi=600)
 plt.show()
 

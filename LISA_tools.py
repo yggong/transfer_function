@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 10 22:11:39 2019
-based on the code in https://github.com/eXtremeGravityInstitute/LISA_Sensitivity
-please cite 1803.01944 too
+based on 1803.01944
 @author: Gong
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from scipy import optimize
+from scipy.special import sici
 
 """
 PhenomA coefficeints:
@@ -41,43 +41,61 @@ pi = np.pi
 def get_detector(detector):
     if (detector == 'lisa'):
         L= 2.5e9 # meters
-        f_star = C/(2.*np.pi*L)
         S_lp   = 1.5e-11
         S_ac   = 3.0e-15
         
     elif(detector == 'tq'):
         L= np.sqrt(3.)*1.e8 # meters
-        f_star = C/(2.*np.pi*L)
         S_lp   = 1.0e-12
         S_ac   = 1.0e-15
-    
+
+    elif(detector == 'tj'):
+        L= 3.e9 # meters
+        S_lp   = 8.0e-12
+        S_ac   = 3.0e-15
+        
+    f_star = C/(2.*np.pi*L)
     return L, f_star, S_lp, S_ac
 
-def get_Sn(constants,detector):
+def get_Sn(detector, constants):
 	# constants = np.arrays([H0, Omega_m, Tobs, NC])    
     NC = constants[3]
-    Tobs = constants[2]
+    Tobs   = constants[2]
     L, f_star, S_lp, S_ac = get_detector(detector)
     transfer_data = np.genfromtxt('R.txt')
-    f = transfer_data[:,0]*f_star # convert to frequency
-    R = transfer_data[:,1]*NC     # tensor response gets improved by more data channels
-    Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R #considers repsonse function
-    if (detector == 'lisa'):
-        Sn += get_Sc_est(f, Tobs, NC) #considers repsonse function
+    f = transfer_data[:,0]
+    R = Get_Ru(f)*NC    
+#   due to numerical accuracy for ci(x) as x->0, set the theoretical value 
+    f_c = 8.5e-4  #set the minimum frequency 
+    n_e = np.where(f>=f_c)[0][0]
+    R[0:n_e] = 1./5.*np.sin(np.pi/3.)**2.*NC    
+    f *= f_star # convert to frequency
+#    f = transfer_data[:,0]*f_star
+#    R = transfer_data[:,1]*NC     # response gets improved by more data channels
+
     
+    if (detector == 'tq'):
+        Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R  #considers repsonse function    
+        
+    else:
+        Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R + get_Sc_est(f, Tobs, NC)
+        
+	# Sn = get_Pn(f, f_star, L)+ get_Sc_est(f, Tobs, NC) #considers repsonse function 
     return f, Sn
 
-# simulated lisa curve for the original armlength
+
 def get_Snls(f):
     f0 = 1.0e-3
     x = f/f0
     Sn = 9.2e-44*(173+x**2+(x/10.)**(-4))/0.3 #divided by the response effect 3/10    
     return Sn
 
+
 def get_Snaligo(f):
-    f0 = 215.0
-    x = f/f0
-    Sn = 5.0e-49*(x**(-4.14)-5.0*x**(-2)+111.0*(1-x**2+0.5*x**4)/(1+0.5*x**2)) #divided by 1/5
+#    f0 = 215.0
+#    x = f/f0
+#    Sn = 5.0e-49*(x**(-4.14)-5.0*x**(-2)+111.0*(1-x**2+0.5*x**4)/(1+0.5*x**2)) #divided by 1/5
+    Sn = (2.e-23*(20/f)**2)**2+(9.e-25*f/200)**2+(4.e-24)**2
     
     return Sn
 
@@ -221,22 +239,23 @@ def get_z(z, Dl, Omega_m, H0):
 def get_track_SNR(f_start, f_end, M, eta, M_chirp, Dl, constants, detector):
 
 	# constants = np.arrays([H0, Omega_m, L, f_star, Tobs, NC])
-    f, Sn = get_Sn(constants, detector)
+
+    f, Sn = get_Sn(detector, constants)
     
     arg_start = np.where(f<=f_start)[0][-1]
     
     if (f_end > f[-1]):   #off the LISA band
-		arg_end = len(f)-1        
+        arg_end = len(f)-1        
         
     else:
-		arg_end = np.where(f>=f_end)[0][0]
+        arg_end = np.where(f>=f_end)[0][0]
         
     SNR = 0.
     
     for i in range(arg_start, arg_end):
-		freq   = 0.5*(f[i] + f[i-1])
-		Sn_est = 0.5*(1./Sn[i] + 1./Sn[i-1])
-		SNR += 16./5.*freq*get_A(freq, M, eta, M_chirp, Dl)**2*Sn_est*(np.log(f[i]) - np.log(f[i-1]))
+        freq   = 0.5*(f[i] + f[i-1])
+        Sn_est = 0.5*(1./Sn[i] + 1./Sn[i-1])
+        SNR += 16./5.*freq*get_A(freq, M, eta, M_chirp, Dl)**2*Sn_est*(np.log(f[i]) - np.log(f[i-1]))
         
     SNR = np.sqrt(SNR)
     
@@ -246,15 +265,15 @@ def get_h_char_point(f_start, f_end, M, eta, M_chirp, Dl, constants, detector):
 
     NC     = constants[3]
     Tobs   = constants[2]
-    if (detector == 'lisa'):
-        L, f_star, S_lp, S_ac = get_detector('lisa')
-    elif (detector == 'tq'):
-        L, f_star, S_lp, S_ac = get_detector('tq')
-    
-    h_e = np.sqrt(16./5.)*get_A(f_start, M, eta, M_chirp, Dl)*((f_end-f_start)*f_start)**0.25
+    L, f_star, S_lp, S_ac = get_detector(detector)
+    h_e = np.sqrt(16./5.*(f_end-f_start))*get_A(f_start, M, eta, M_chirp, Dl)
     h_c = np.sqrt(16./5.*(f_end-f_start)*f_start)*get_A(f_start, M, eta, M_chirp, Dl)
     
-    Sn_est = get_Sn_approx(f_start, f_star, L, NC, S_lp, S_ac) + get_Sc_est(f_start, Tobs, NC)
+    if (detector == 'tq'):
+        Sn_est = get_Sn_approx(f_start, f_star, L, NC, S_lp, S_ac)
+    else:
+        Sn_est = get_Sn_approx(f_start, f_star, L, NC, S_lp, S_ac) + get_Sc_est(f_start, Tobs, NC)
+        
     SNR = 8.*np.sqrt(Tobs/5.)*M_chirp**(5./3.)*(np.pi*f_start)**(2./3.)/Dl/np.sqrt(Sn_est)
     
     return h_e, h_c, SNR
@@ -265,12 +284,14 @@ def get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector
     
     A_arr   = np.zeros(len(f))
     h_c_arr = np.zeros(len(f))
+    h_e_arr = np.zeros(len(f))
     
     if (f_end > f[-1]): #out the band, 100 points instead
         arg_start = 0
         f = np.arange(f_start,f_end,(f_end-f_start)/100.)
         A_arr   = np.zeros(len(f))
         h_c_arr = np.zeros(len(f))
+        h_e_arr = np.zeros(len(f))
         arg_end = len(f)
         
     else:
@@ -278,11 +299,12 @@ def get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector
         
     for i in range(arg_start, arg_end):
         A_arr[i]   = get_A(f[i], M, eta, M_chirp, Dl)
+        h_e_arr[i] = A_arr[i]*np.sqrt(f[i]*16./5.)
         h_c_arr[i] = f[i]*A_arr[i]*np.sqrt(16./5.)
         
     SNR = get_track_SNR(f_start, f_end, M, eta, M_chirp, Dl, constants, detector)
     
-    return h_c_arr, SNR
+    return h_e_arr, h_c_arr, SNR
 
 
 """
@@ -314,17 +336,17 @@ def calculate_source(detector, m1, m2, constants, Dl=None, z=None, T_merger=None
     Omega_m = constants[1]
     H0      = constants[0]
     Tobs    = constants[2]
-
-    f, Sn = get_Sn(constants,detector)
     
+    f, Sn = get_Sn(detector, constants)
+   
     """ Sort out the luminosity distance and redshift of the source """
     if (Dl==None): # Z was specified, then we must calculate Dl
-		Dl = get_Dl(z, Omega_m, H0)
+        Dl = get_Dl(z, Omega_m, H0)
     elif(z==None):
-		z = optimize.root(get_z, 1., args=(Dl, Omega_m, H0)).x[0]
+        z = optimize.root(get_z, 1., args=(Dl, Omega_m, H0)).x[0]
         
     """ Calculate relevant mass parameters """
-    ma = m1/TSUN
+#    ma = m1/TSUN
     m1 *= (1. + z) # redshift the source frame masses
     m2 *= (1. + z)
     M = m1 + m2                           # total mass
@@ -335,41 +357,42 @@ def calculate_source(detector, m1, m2, constants, Dl=None, z=None, T_merger=None
     f3 = (a3*eta**2 + b3*eta + c3)/(np.pi*M) 
     
     if (f_start==None): # T_merger was specified
-		f_start = (5.*M_chirp/T_merger)**(3./8.)/(8.*np.pi*M_chirp)
+        f_start = (5.*M_chirp/T_merger)**(3./8.)/(8.*np.pi*M_chirp)
     else: # f_start was specified, calculate time to merger for circular binary
-		T_merger = 5.*M_chirp/(8.*np.pi*f_start*M_chirp)**(8./3.)
+        T_merger = 5.*M_chirp/(8.*np.pi*f_start*M_chirp)**(8./3.)
         
     """ Determine the ending frequency of this source """
     if (T_merger > Tobs):
-		f_end = (5.*M_chirp/(np.abs(Tobs-T_merger)))**(3./8.)/(8.*np.pi*M_chirp)
+        f_end = (5.*M_chirp/(np.abs(Tobs-T_merger)))**(3./8.)/(8.*np.pi*M_chirp)
     elif (T_merger <= Tobs):
-		f_end = f3    
+        f_end = f3    
 
 	# How much log bandwidth does the source span
     d_log_f = np.log(f_end/f_start)
     
     if (d_log_f > 0.5): # plot a track    
-        h_c_arr, SNR = get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector) 
+        h_e_arr, h_c_arr, SNR = get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector) 
 #        if (f_end>f[-1]):  # off the LISA band
 #            f = np.arange(f_start,f_end,(f_end-f_start)/100.)   
         
 #        plt.loglog(f, h_c_arr, label='SNR: ' + str("%4.3f" % SNR) + ', M_1={}'.format(ma)) 
         
     else: # track is too short, plot a point
+        h_e_arr = 0.
         h_c_arr = 0.
-        h_e, h_c, SNR = get_h_char_point(f_start, f_end, M, eta, M_chirp, Dl, constants,detector)
- #       plt.loglog(f_start, h_c, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', $M_1$={}'.format(ma)) #h_c
-        plt.loglog(f_start, h_e, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', $M_1$={}'.format(ma)) #h_e       
+        h_e_arr, h_c_arr, SNR = get_h_char_point(f_start, f_end, M, eta, M_chirp, Dl, constants, detector)
+#        plt.loglog(f_start, h_c, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', $M_1$={}'.format(ma)) 
+#        plt.loglog(f_start, h_c, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', ZTF') 
         
     SNR1=0.
     
     if (f_end>f[-1]):  # off the LISA band, into aLIGO band
-		f = np.arange(f_start,f_end,(f_end-f_start)/100.)
-		fa = np.arange(1,1001,0.5)
-		Sna = get_Snaligo(fa)                    
-		SNR1 = Get_aLIGO_SNR(fa, Sna, f_start, f_end, M, eta, M_chirp, Dl)
+        f = np.arange(f_start,f_end,(f_end-f_start)/100.)
+        fa = np.arange(1,1001,0.5)
+        Sna = get_Snaligo(fa)                    
+        SNR1 = Get_aLIGO_SNR(fa, Sna, f_start, f_end, M, eta, M_chirp, Dl)
         
-    return f, h_c_arr, SNR, SNR1
+    return f, h_e_arr, h_c_arr, SNR, SNR1
 
 def Get_aLIGO_SNR(f, Sn, f_start, f_end, M,eta, M_chirp, Dl):
 
@@ -395,3 +418,16 @@ def Get_aLIGO_SNR(f, Sn, f_start, f_end, M,eta, M_chirp, Dl):
 	SNR = np.sqrt(SNR)
 
 	return SNR
+
+#Somehow this function only gives correct result with python3, not python2
+def Get_Ru(u):
+    gamma = np.pi/3.
+    ru = (  0.5-2./u**2. + (-1./6.+2./u**2.)*np.cos(gamma) + 0.25/u**2.*(1.+1./np.sin(gamma/2.)**2.)*np.cos(2.*u*np.sin(gamma/2.))    
+        + ((-3.+np.cos(gamma))/u**3.+(-21.+28.*np.cos(gamma)-7.*np.cos(2.*gamma))/u)/16./np.sin(gamma/2.)**3.*np.sin(2.*u*np.sin(gamma/2.)) 
+        + 4.*np.sin(gamma/2.)**2.*(sici(2.*u*np.sin(gamma/2.))[1]-sici(2.*u)[1]-np.log(np.sin(gamma/2.))) 
+        + ((2.-2.*np.cos(gamma))/u**3.+(1.-np.cos(gamma))/u + 2.*np.cos(gamma/2.)**2.*(2.*sici(2.*u)[0]
+            -sici(2.*u*(1+np.sin(gamma/2.)))[0]-sici(2.*u*(1.-np.sin(gamma/2.)))[0]))*np.sin(2.*u)
+        + ((1.-np.cos(gamma))/6.+(-2.+2.*np.cos(gamma))/u**2. + 2.*np.cos(gamma/2.)**2.*(2.*sici(2.*u)[1]
+            -sici(2.*u*(1.+np.sin(gamma/2.)))[1]-sici(2.*u*(1.-np.sin(gamma/2.)))[1]+2.*np.log(np.cos(gamma/2.))))*np.cos(2.*u)   
+        )/u**2./4.
+    return ru # R_tensor = 2* R_+
