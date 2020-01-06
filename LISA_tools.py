@@ -62,16 +62,19 @@ def get_Sn(detector, constants):
     NC = constants[3]
     Tobs   = constants[2]
     L, f_star, S_lp, S_ac = get_detector(detector)
-    transfer_data = np.genfromtxt('R.txt')
-    f = transfer_data[:,0]
+#    transfer_data = np.genfromtxt('R.txt')
+#    f = transfer_data[:,0]*f_star
+#    R = transfer_data[:,1]*NC     # response gets improved by more data channels    
+    x0=np.arange(-5.,-1.,0.1)
+    x2=np.arange(-1.,2.,0.01)
+    x3=np.concatenate((x0,x2),axis=0)
+    f=10.**x3
     R = Get_Ru(f)*NC    
 #   due to numerical accuracy for ci(x) as x->0, set the theoretical value 
     f_c = 8.5e-4  #set the minimum frequency 
     n_e = np.where(f>=f_c)[0][0]
     R[0:n_e] = 1./5.*np.sin(np.pi/3.)**2.*NC    
     f *= f_star # convert to frequency
-#    f = transfer_data[:,0]*f_star
-#    R = transfer_data[:,1]*NC     # response gets improved by more data channels
 
     
     if (detector == 'tq'):
