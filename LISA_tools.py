@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 10 22:11:39 2019
+Space-based gw detector LISA/Tianqin/Taiji's Sensitivity
 based on 1803.01944
+detectors: lisa,tq,tj
 @author: Gong
 """
 
@@ -184,7 +186,12 @@ def get_Sn_approx(f, f_star, L, NC, S_lp, S_ac):
     Get the noise curve approximation, Equation (1) of ``LISA Sensitivity'' - Neil Cornish & Travis Robson
     """  
     # Sky and polarization averaged signal response of the detector, Equation (9)
-    Ra = 3./20./(1. + 6./10.*(f/f_star)**2)*NC
+#    Ra = 3./20./(1. + 6./10.*(f/f_star)**2)*NC
+    Ra = Get_Ru(f/f_star)*NC    
+#   due to numerical accuracy for ci(x) as x->0, set the theoretical value 
+    f_c = 8.5e-4  #set the minimum frequency 
+    if (f/f_star < f_c):
+        Ra = 1./5.*np.sin(np.pi/3.)**2.*NC 
     
     # strain spectral density, Equation (2)
     Sn = get_Pn(f, f_star, L, S_lp, S_ac)/Ra
