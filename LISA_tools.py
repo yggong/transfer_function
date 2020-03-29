@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 10 22:11:39 2019
+Updated on March 2020
 Space-based gw detector LISA/Tianqin/Taiji's Sensitivity
 based on 1803.01944
 detectors: lisa,tq,tj
@@ -80,20 +81,13 @@ def get_Sn(detector, constants):
 
     
     if (detector == 'tq'):
-        Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R  #considers repsonse function    
+        Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R  #no confusion noise    
         
     else:
         Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R + get_Sc_est(f, Tobs, NC)
         
 	# Sn = get_Pn(f, f_star, L)+ get_Sc_est(f, Tobs, NC) #considers repsonse function 
     return f, Sn
-
-
-def get_Snls(f):
-    f0 = 1.0e-3
-    x = f/f0
-    Sn = 9.2e-44*(173+x**2+(x/10.)**(-4))/0.3 #divided by the response effect 3/10    
-    return Sn
 
 
 def get_Snaligo(f):
@@ -381,12 +375,16 @@ def calculate_source(detector, m1, m2, constants, Dl=None, z=None, T_merger=None
     d_log_f = np.log(f_end/f_start)
     
     if (d_log_f > 0.5): # plot a track    
-        h_e_arr, h_c_arr, SNR = get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector) 
-#        if (f_end>f[-1]):  # off the LISA band
-#            f = np.arange(f_start,f_end,(f_end-f_start)/100.)   
-        
-#        plt.loglog(f, h_c_arr, label='SNR: ' + str("%4.3f" % SNR) + ', M_1={}'.format(ma)) 
-        
+        h_e_arr, h_c_arr, SNR = get_h_char_track(f, f_start, f_end, M, eta, M_chirp, Dl, constants, detector)  
+        if (f_end > f[-1]): #out the band, 100 points instead
+            f = np.arange(f_start,f_end,(f_end-f_start)/100.)            
+        else:
+            arg_start = np.where(f<=f_start)[0][-1]
+            arg_end = np.where(f>=f_end)[0][0]
+            f=f[arg_start:arg_end]
+            h_e_arr=h_e_arr[arg_start:arg_end]
+            h_c_arr=h_c_arr[arg_start:arg_end] 
+            
     else: # track is too short, plot a point
         h_e_arr = 0.
         h_c_arr = 0.
@@ -394,10 +392,10 @@ def calculate_source(detector, m1, m2, constants, Dl=None, z=None, T_merger=None
 #        plt.loglog(f_start, h_c, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', $M_1$={}'.format(ma)) 
 #        plt.loglog(f_start, h_c, 'r.', label='SNR: ' + str("%4.1f" % SNR) + ', ZTF') 
         
+
     SNR1=0.
     
     if (f_end>f[-1]):  # off the LISA band, into aLIGO band
-        f = np.arange(f_start,f_end,(f_end-f_start)/100.)
         fa = np.arange(1,1001,0.5)
         Sna = get_Snaligo(fa)                    
         SNR1 = Get_aLIGO_SNR(fa, Sna, f_start, f_end, M, eta, M_chirp, Dl)
