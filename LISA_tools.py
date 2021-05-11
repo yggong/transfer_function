@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 10 22:11:39 2019
-Updated on March 2020
 Space-based gw detector LISA/Tianqin/Taiji's Sensitivity
 based on 1803.01944
 detectors: lisa,tq,tj
@@ -65,26 +64,31 @@ def get_Sn(detector, constants):
     NC = constants[3]
     Tobs   = constants[2]
     L, f_star, S_lp, S_ac = get_detector(detector)
-#    transfer_data = np.genfromtxt('R.txt')
-#    f = transfer_data[:,0]*f_star
-#    R = transfer_data[:,1]*NC     # response gets improved by more data channels    
+    #use data
+    '''
+    transfer_data = np.genfromtxt('R.txt')
+    f = transfer_data[:,0]*f_star
+    R = transfer_data[:,1]*NC     # response gets improved by more data channels   
+    ''' 
+    #although data and exact formulae seems to give the same curve, see ru_res.py
+    #but SNR calculated is different
+    #use exact analytical formulae
     x0=np.arange(-5.,-1.,0.1)
     x2=np.arange(-1.,2.,0.01)
     x3=np.concatenate((x0,x2),axis=0)
-    f=10.**x3
+    f=10.**x3 #u
     R = Get_Ru(f)*NC    
 #   due to numerical accuracy for ci(x) as x->0, set the theoretical value 
     f_c = 8.5e-4  #set the minimum frequency 
     n_e = np.where(f>=f_c)[0][0]
     R[0:n_e] = 1./5.*np.sin(np.pi/3.)**2.*NC    
     f *= f_star # convert to frequency
-
     
     if (detector == 'tq'):
         Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R  #no confusion noise    
         
     else:
-        Sn = get_Pn(f, f_star, L, S_lp, S_ac)/R + get_Sc_est(f, Tobs, NC)
+        Sn = (get_Pn(f, f_star, L, S_lp, S_ac) + get_Sc_est(f, Tobs, NC))/R
         
 	# Sn = get_Pn(f, f_star, L)+ get_Sc_est(f, Tobs, NC) #considers repsonse function 
     return f, Sn
@@ -154,26 +158,43 @@ def get_Sc_est(f, Tobs, NC):
     
     Sc  = 1. + np.tanh(gamma*(f_knee - f))
     Sc *= np.exp(-f**alpha + beta*f*np.sin(kappa*f))
-    Sc *= A*f**(-7./3.)
+    Sc *= A*f**(-7./3.)*0.3/(1+0.6*(f/0.01909)**2)
     
     return Sc    
 
 def get_Pn(f, f_star, L, S_lp, S_ac):
     """
-    Get the Power Spectral Density
+    Get the Power Spectral Density for LISA
+    published formula in CQG 36 (19) 105011
     """
     
     # single-link optical metrology noise (Hz^{-1}), Equation (10)
-    P_oms = S_lp**2*(1. + (2.0e-3/f)**4) 
+    P_oms = S_lp**2
     
     # single test mass acceleration noise, Equation (11)
-    P_acc = S_ac**2*(1. + (0.4e-3/f)**2)*(1. + (f/(8.0e-3))**4) 
+    P_acc = S_ac**2*(1. + (0.4e-3/f)**2)
     
     # total noise in Michelson-style LISA data channel, Equation (12)
     Pn = (P_oms + 2.*(1. + np.cos(f/f_star)**2)*P_acc/(2.*pi*f)**4)/L**2
     
     return Pn
 
+def get_Pn1(f, f_star, L, S_lp, S_ac):
+    """
+    Get the Power Spectral Density for LISA
+    original formula in 1803.01944
+    """
+    
+    # single-link optical metrology noise (Hz^{-1}), Equation (10)
+    P_oms = S_lp**2*(1. + (2.0e-3/f)**4) 
+    
+    # single test mass acceleration noise, Equation (11)
+    P_acc = S_ac**2*(1.+(4.e-4/f)**2)*(1. + (f/(8.0e-3))**4) 
+    
+    # total noise in Michelson-style LISA data channel, Equation (12)
+    Pn = (P_oms + 2.*(1. + np.cos(f/f_star)**2)*P_acc/(2.*pi*f)**4)/L**2
+    
+    return Pn
 
 def get_Sn_approx(f, f_star, L, NC, S_lp, S_ac):
     """
@@ -438,4 +459,4 @@ def Get_Ru(u):
         + ((1.-np.cos(gamma))/6.+(-2.+2.*np.cos(gamma))/u**2. + 2.*np.cos(gamma/2.)**2.*(2.*sici(2.*u)[1]
             -sici(2.*u*(1.+np.sin(gamma/2.)))[1]-sici(2.*u*(1.-np.sin(gamma/2.)))[1]+2.*np.log(np.cos(gamma/2.))))*np.cos(2.*u)   
         )/u**2./4.
-    return ru # R_tensor = 2* R_+
+    return ru # return R_+, R_tensor = 2* R_+
