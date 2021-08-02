@@ -5,7 +5,6 @@ Space-based gw detector LISA/Tianqin/Taiji's Sensitivity
 based on 1803.01944
 detectors: lisa,tq,tj
 @author: ygong
-python colors: https://blog.csdn.net/Koyurion/article/details/85857344
 """
 
 import numpy as np
@@ -166,13 +165,13 @@ plt.rcParams["legend.framealpha"] = 0.1
 plt.rc('font', family='calibri',size=20,weight='bold')
 
 f, Sn = LISA.get_Sn('lisa', constants)
-plt.loglog(f, np.sqrt(f*Sn),color='lime',lw=2) # plot the characteristic strain
+plt.loglog(f, np.sqrt(f*Sn),color='cyan',lw=2) # plot the characteristic strain
 #plt.loglog(f, np.sqrt(Sn),'k') # plot the strain
 
 detector = "tq"
 
 ftq, Sntq = LISA.get_Sn(detector, constants)
-plt.loglog(ftq, np.sqrt(ftq*Sntq),color='fuchsia',lw=2) # plot the characteristic strain
+plt.loglog(ftq, np.sqrt(ftq*Sntq),color='magenta',lw=2) # plot the characteristic strain
 #plt.loglog(ftq, np.sqrt(Sntq),'c') # plot the strain
 
 ftj, Sntj = LISA.get_Sn('tj', constants)
@@ -317,7 +316,7 @@ font5 = {'family': 'serif',
         }
 
 font6 = {'family': 'serif',
-        'color':  'fuchsia',
+        'color':  'magenta',
         'weight': 'bold',
         'size': 18,
         }
@@ -341,7 +340,7 @@ plt.tick_params(axis='both', which='major',labelsize=20)
 plt.rcParams.update({"text.usetex": False})
 plt.text(5., 5.0e-21, 'GW150914', fontdict=font2)
 plt.text(40., 9.5e-23, 'aLIGO', fontsize=18,weight='bold',family='serif',color='brown')
-plt.text(0.2, 6.0e-19, 'LISA', fontsize=18,weight='bold',family='serif',color='lime')
+plt.text(0.2, 6.0e-19, 'LISA', fontsize=18,weight='bold',family='serif',color='cyan')
 plt.text(0.8, 1.0e-19, 'TJ', fontdict=font3)
 #plt.text(0.8, 2.0e-20, r'{}'.format(detector), fontdict=font4)
 plt.text(0.8, 2.0e-20, 'TQ', fontdict=font6)
