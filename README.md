@@ -3,8 +3,8 @@ The python code for creating the transfer function, sensitivity curve and PI cur
 
 Welcome to use this code to generate your own graph, please cite the papers
 
-Dicong Liang, Yungui Gong, Alan J. Weinstein, Chao Zhang and Chunyu Zhang, arXiv: 1901.09624
-Chunyu Zhang, Qing Gao, Yungui Gong, Dicong Liang, Alan J. Weinstein and Chao Zhang, arXiv: 1906.10910
+Dicong Liang, Yungui Gong, Alan J. Weinstein, Chao Zhang and Chunyu Zhang, arXiv: 1901.09624;
+Chunyu Zhang, Qing Gao, Yungui Gong, Dicong Liang, Alan J. Weinstein and Chao Zhang, arXiv: 1906.10910;
 Chunyu Zhang, Qing Gao, Yungui Gong, Bin Wang, Alan J. Weinstein and Chao Zhang, arXiv: 2003.01441
 
 The file transferru.py creates the transfer functions and the data transfer.txt and PIdata.txt
