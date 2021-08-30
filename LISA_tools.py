@@ -3,6 +3,7 @@
 Created on Wed Apr 10 22:11:39 2019
 Space-based gw detector LISA/Tianqin/Taiji's Sensitivity
 based on 1803.01944
+Full analytical formulae: 2003.01441
 detectors: lisa,tq,tj
 @author: Gong
 """
@@ -449,6 +450,7 @@ def Get_aLIGO_SNR(f, Sn, f_start, f_end, M,eta, M_chirp, Dl):
 	return SNR
 
 #Somehow this function only gives correct result with python3, not python2
+#Ref: Full analytical formulae: C. Zhang, Q. Gao, Y. Gong, B. Wang, A.J. Weinstein, C. Zhang, 2003.01441; PRD 101, 124027 (2020)
 def Get_Ru(u):
     gamma = np.pi/3.
     ru = (  0.5-2./u**2. + (-1./6.+2./u**2.)*np.cos(gamma) + 0.25/u**2.*(1.+1./np.sin(gamma/2.)**2.)*np.cos(2.*u*np.sin(gamma/2.))    
